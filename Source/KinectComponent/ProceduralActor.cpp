@@ -9,22 +9,38 @@
 // Sets default values
 AProceduralActor::AProceduralActor()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
 
 	UStaticMeshComponent* SphereComponent = CreateEditorOnlyDefaultSubobject<UStaticMeshComponent>(TEXT("Sphere"));
 	//SphereComponent->InitSphereRadius(30);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh>SphereMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Sphere.Sphere'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh>SphereMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Plane.Plane'"));
 	SphereComponent->SetStaticMesh(SphereMeshAsset.Object);
 
-	static ConstructorHelpers::FObjectFinder<UMaterial> plane_material(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial'"));
+	static ConstructorHelpers::FObjectFinder<UMaterial> plane_material(TEXT("Material'/Game/Material'"));
 	SphereComponent->GetStaticMesh()->SetMaterial(0, plane_material.Object);
-
 
 	RootComponent = SphereComponent;
 
+	//RootComponent->Rotat(FRotator(90.0f));
+
+	//RootComponent->SetWorldLocationAndRotation(RootComponent->GetComponentLocation(), FRotator(-90.0f));
+
+
+	//UStaticMeshComponent* SphereComponent = CreateEditorOnlyDefaultSubobject<UStaticMeshComponent>(TEXT("Sphere"));
+	////SphereComponent->InitSphereRadius(30);
+	//static ConstructorHelpers::FObjectFinder<UStaticMesh>SphereMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Sphere.Sphere'"));
+	//SphereComponent->SetStaticMesh(SphereMeshAsset.Object);
+
+	//static ConstructorHelpers::FObjectFinder<UMaterial> plane_material(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial'"));
+	//SphereComponent->GetStaticMesh()->SetMaterial(0, plane_material.Object);
+
+
+	//RootComponent = SphereComponent;
+
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("GeneratedMesh"));
-	
+
 	// New in UE 4.17, multi-threaded PhysX cooking.
 	mesh->bUseAsyncCooking = true;
 }
@@ -34,9 +50,9 @@ void AProceduralActor::InitializeMesh()
 	RootComponent = mesh;
 
 	FVector item;
-	for (int i = -Width; i <= Width; i++) 
+	for (int i = -Width; i <= Width; i++)
 	{
-		for (int j = -Length; j <= Length; j++) 
+		for (int j = -Length; j <= Length; j++)
 		{
 			item.X = i * LengthMultiplicator;
 			item.Y = j * LengthMultiplicator;
@@ -74,10 +90,10 @@ void AProceduralActor::BeginPlay()
 void AProceduralActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
+
 	currentTime += DeltaTime;
 
-	if (currentTime >= interval) 
+	if (currentTime >= interval)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Tick"));
 		currentTime = 0.0f;
