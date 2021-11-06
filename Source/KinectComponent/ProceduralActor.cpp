@@ -19,15 +19,15 @@ AProceduralActor::AProceduralActor()
 
 void AProceduralActor::CreateEditorPlaceHolder()
 {
-	UStaticMeshComponent* component = CreateEditorOnlyDefaultSubobject<UStaticMeshComponent>(TEXT("Placeholder"));
+	editorMash = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Placeholder"));
 
 	ConstructorHelpers::FObjectFinder<UStaticMesh>	meshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Plane'"));
 	ConstructorHelpers::FObjectFinder<UMaterial>	material(TEXT("Material'/Game/Materials/Material'"));
 
-	component->SetStaticMesh(meshAsset.Object);
-	component->GetStaticMesh()->SetMaterial(0, material.Object);
+	editorMash->SetStaticMesh(meshAsset.Object);
+	editorMash->GetStaticMesh()->SetMaterial(0, material.Object);
 
-	RootComponent = component;
+	RootComponent = editorMash;
 }
 
 void AProceduralActor::InitializeInGameMesh()
@@ -39,6 +39,7 @@ void AProceduralActor::InitializeInGameMesh()
 void AProceduralActor::CreateMesh()
 {
 	RootComponent = mesh;
+	editorMash->DestroyComponent();
 
 	FVector item;
 	for (int i = -Width; i <= Width; i++)

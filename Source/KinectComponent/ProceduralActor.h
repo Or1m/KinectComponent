@@ -40,6 +40,8 @@ protected:
 private:
 	UPROPERTY()
 		UProceduralMeshComponent* mesh;
+	UPROPERTY()
+		UStaticMeshComponent* editorMash;
 
 	UPROPERTY()
 		TArray<FVector> vertices;
