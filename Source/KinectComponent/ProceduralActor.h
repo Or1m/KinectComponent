@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 2021, Bc. Miroslav Kaèeriak. All Rights Reserved.
 
 #pragma once
 
@@ -26,10 +26,7 @@ public:
 		int LengthMultiplicator = 100;
 
 protected:
-	void PostActorCreated();
-	void PostLoad();
-
-	void CreateMesh();
+	void InitializeMesh();
 	void UpdateMesh();
 
 	// Called when the game starts or when spawned

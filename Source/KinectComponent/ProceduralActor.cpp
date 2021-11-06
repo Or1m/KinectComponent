@@ -1,8 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 2021, Bc. Miroslav Kaèeriak. All Rights Reserved.
+
+#include <ProceduralMeshComponent/Public/KismetProceduralMeshLibrary.h>
 
 #include "ProceduralActor.h"
-#include <ProceduralMeshComponent/Public/KismetProceduralMeshLibrary.h>
 #include "Components/SphereComponent.h"
+#include "Components/StaticMeshComponent.h"
 
 // Sets default values
 AProceduralActor::AProceduralActor()
@@ -10,30 +12,24 @@ AProceduralActor::AProceduralActor()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	USphereComponent* SphereComponent = CreateEditorOnlyDefaultSubobject<USphereComponent>(TEXT("Sphere"));
-	SphereComponent->InitSphereRadius(30);
+	UStaticMeshComponent* SphereComponent = CreateEditorOnlyDefaultSubobject<UStaticMeshComponent>(TEXT("Sphere"));
+	//SphereComponent->InitSphereRadius(30);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh>SphereMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Sphere.Sphere'"));
+	SphereComponent->SetStaticMesh(SphereMeshAsset.Object);
+
+	static ConstructorHelpers::FObjectFinder<UMaterial> plane_material(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial'"));
+	SphereComponent->GetStaticMesh()->SetMaterial(0, plane_material.Object);
+
+
 	RootComponent = SphereComponent;
 
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("GeneratedMesh"));
+	
 	// New in UE 4.17, multi-threaded PhysX cooking.
 	mesh->bUseAsyncCooking = true;
 }
 
-// This is called when actor is spawned (at runtime or when you drop it into the world in editor)
-void AProceduralActor::PostActorCreated()
-{
-	Super::PostActorCreated();
-	//CreateMesh();
-}
-
-// This is called when actor is already in level and map is opened
-void AProceduralActor::PostLoad()
-{
-	Super::PostLoad();
-	//CreateMesh();
-}
-
-void AProceduralActor::CreateMesh()
+void AProceduralActor::InitializeMesh()
 {
 	RootComponent = mesh;
 
@@ -71,7 +67,7 @@ void AProceduralActor::BeginPlay()
 	Super::BeginPlay();
 	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "BeginPlay");
 
-	CreateMesh();
+	InitializeMesh();
 }
 
 // Called every frame
