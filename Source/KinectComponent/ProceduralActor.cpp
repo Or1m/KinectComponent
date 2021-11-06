@@ -12,40 +12,31 @@ AProceduralActor::AProceduralActor()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-
-	UStaticMeshComponent* SphereComponent = CreateEditorOnlyDefaultSubobject<UStaticMeshComponent>(TEXT("Sphere"));
-	//SphereComponent->InitSphereRadius(30);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh>SphereMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Plane.Plane'"));
-	SphereComponent->SetStaticMesh(SphereMeshAsset.Object);
-
-	static ConstructorHelpers::FObjectFinder<UMaterial> plane_material(TEXT("Material'/Game/Material'"));
-	SphereComponent->GetStaticMesh()->SetMaterial(0, plane_material.Object);
-
-	RootComponent = SphereComponent;
-
-	//RootComponent->Rotat(FRotator(90.0f));
-
-	//RootComponent->SetWorldLocationAndRotation(RootComponent->GetComponentLocation(), FRotator(-90.0f));
-
-
-	//UStaticMeshComponent* SphereComponent = CreateEditorOnlyDefaultSubobject<UStaticMeshComponent>(TEXT("Sphere"));
-	////SphereComponent->InitSphereRadius(30);
-	//static ConstructorHelpers::FObjectFinder<UStaticMesh>SphereMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Sphere.Sphere'"));
-	//SphereComponent->SetStaticMesh(SphereMeshAsset.Object);
-
-	//static ConstructorHelpers::FObjectFinder<UMaterial> plane_material(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial'"));
-	//SphereComponent->GetStaticMesh()->SetMaterial(0, plane_material.Object);
-
-
-	//RootComponent = SphereComponent;
-
-	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("GeneratedMesh"));
-
-	// New in UE 4.17, multi-threaded PhysX cooking.
-	mesh->bUseAsyncCooking = true;
+	CreateEditorPlaceHolder();
+	InitializeInGameMesh();
 }
 
-void AProceduralActor::InitializeMesh()
+
+void AProceduralActor::CreateEditorPlaceHolder()
+{
+	UStaticMeshComponent* component = CreateEditorOnlyDefaultSubobject<UStaticMeshComponent>(TEXT("Placeholder"));
+
+	ConstructorHelpers::FObjectFinder<UStaticMesh>	meshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Plane'"));
+	ConstructorHelpers::FObjectFinder<UMaterial>	material(TEXT("Material'/Game/Materials/Material'"));
+
+	component->SetStaticMesh(meshAsset.Object);
+	component->GetStaticMesh()->SetMaterial(0, material.Object);
+
+	RootComponent = component;
+}
+
+void AProceduralActor::InitializeInGameMesh()
+{
+	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("GeneratedMesh"));
+	mesh->bUseAsyncCooking = true; // New in UE 4.17, multi-threaded PhysX cooking.
+}
+
+void AProceduralActor::CreateMesh()
 {
 	RootComponent = mesh;
 
@@ -71,9 +62,7 @@ void AProceduralActor::UpdateMesh()
 	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(numXY, numXY, false, triangles);
 
 	mesh->CreateMeshSection_LinearColor(0, vertices, triangles, normals, uvs, vertexColors, tangents, true);
-
-	// Enable collision data
-	mesh->ContainsPhysicsTriMeshData(true);
+	mesh->ContainsPhysicsTriMeshData(true); // Enable collision data
 }
 
 
@@ -83,9 +72,8 @@ void AProceduralActor::BeginPlay()
 	Super::BeginPlay();
 	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "BeginPlay");
 
-	InitializeMesh();
+	CreateMesh();
 }
-
 // Called every frame
 void AProceduralActor::Tick(float DeltaTime)
 {
