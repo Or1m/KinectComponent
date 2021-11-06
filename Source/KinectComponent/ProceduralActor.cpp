@@ -26,7 +26,7 @@ void AProceduralActor::CreateEditorPlaceHolder()
 
 	editorMash->SetStaticMesh(meshAsset.Object);
 	editorMash->GetStaticMesh()->SetMaterial(0, material.Object);
-
+	
 	RootComponent = editorMash;
 }
 
