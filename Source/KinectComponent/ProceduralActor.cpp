@@ -1,16 +1,18 @@
 // Copyright 2021, Bc. Miroslav Kaèeriak. All Rights Reserved.
 
-#include <ProceduralMeshComponent/Public/KismetProceduralMeshLibrary.h>
-
 #include "ProceduralActor.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include <ProceduralMeshComponent/Public/KismetProceduralMeshLibrary.h>
+#include <filesystem>
+#include <fstream>
+#include <string>
 
 // Sets default values
 AProceduralActor::AProceduralActor()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	CreateEditorPlaceHolder();
 	InitializeInGameMesh();
@@ -41,14 +43,33 @@ void AProceduralActor::CreateMesh()
 	RootComponent = mesh;
 	editorMash->DestroyComponent();
 
-	FVector item;
-	for (int i = -Width; i <= Width; i++)
+	FString absoluteFilePath = FPaths::ProjectDir() + TEXT("output.txt");
+	std::string stringPath = std::string(TCHAR_TO_UTF8(*absoluteFilePath));
+
+	TArray<float> arr;
+
+	std::ifstream file(stringPath);
+
+	if (file.is_open()) 
 	{
-		for (int j = -Length; j <= Length; j++)
+		std::string line;
+
+		while (std::getline(file, line)) {
+			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, line.c_str());
+			arr.Add(std::stof(line));
+		}
+
+		file.close();
+	}
+
+	FVector item;
+	for (int i = 0; i < Width; i++)
+	{
+		for (int j = 0; j < Length; j++)
 		{
 			item.X = i * LengthMultiplicator;
 			item.Y = j * LengthMultiplicator;
-			item.Z = static_cast<float>((rand() / static_cast<float>(RAND_MAX)) * HeightMultiplicator);
+			item.Z = arr[(Width * i ) + j] * HeightMultiplicator; //static_cast<float>((rand() / static_cast<float>(RAND_MAX)) * HeightMultiplicator);
 
 			vertices.Add(item);
 		}
