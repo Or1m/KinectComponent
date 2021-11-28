@@ -58,4 +58,5 @@ private:
 
 	float currentTime = 0.0f;
 	float interval = 1.0f;
+	bool tick;
 };

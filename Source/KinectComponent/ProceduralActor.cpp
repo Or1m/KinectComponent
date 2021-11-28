@@ -9,8 +9,10 @@
 // Sets default values
 AProceduralActor::AProceduralActor()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	//F1 for wireframe in game
+
+	tick = true;
+	PrimaryActorTick.bCanEverTick = tick;
 
 	CreateEditorPlaceHolder();
 	InitializeInGameMesh();
@@ -42,9 +44,9 @@ void AProceduralActor::CreateMesh()
 	editorMash->DestroyComponent();
 
 	FVector item;
-	for (int i = -Width; i <= Width; i++)
+	for (int i = 0; i < Width; i++)
 	{
-		for (int j = -Length; j <= Length; j++)
+		for (int j = 0; j < Length; j++)
 		{
 			item.X = i * LengthMultiplicator;
 			item.Y = j * LengthMultiplicator;
@@ -59,7 +61,7 @@ void AProceduralActor::CreateMesh()
 
 void AProceduralActor::UpdateMesh()
 {
-	int numXY = (Width * 2) + 1;
+	int numXY = Width;// (Width * 2) + 1;
 	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(numXY, numXY, false, triangles);
 
 	mesh->CreateMeshSection_LinearColor(0, vertices, triangles, normals, uvs, vertexColors, tangents, true);
@@ -73,6 +75,8 @@ void AProceduralActor::BeginPlay()
 	Super::BeginPlay();
 	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "BeginPlay");
 
+	PrimaryActorTick.SetTickFunctionEnable(tick);
+
 	CreateMesh();
 }
 // Called every frame
@@ -80,12 +84,12 @@ void AProceduralActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	currentTime += DeltaTime;
+	//currentTime += DeltaTime;
 
-	if (currentTime >= interval)
+	//if (currentTime >= interval)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Tick"));
-		currentTime = 0.0f;
+		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Tick"));
+		//currentTime = 0.0f;
 
 		int length = vertices.Num();
 
