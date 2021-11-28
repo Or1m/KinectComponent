@@ -24,6 +24,8 @@ public:
 		int HeightMultiplicator = 30;
 	UPROPERTY(EditAnywhere, Category = Attributes)
 		int LengthMultiplicator = 100;
+	UPROPERTY(EditAnywhere, Category = Debug)
+		float updateInterval = 1.0f;
 
 protected:
 	void InitializeInGameMesh();
@@ -57,6 +59,5 @@ private:
 		TArray<FProcMeshTangent> tangents;
 
 	float currentTime = 0.0f;
-	float interval = 1.0f;
 	bool tick;
 };

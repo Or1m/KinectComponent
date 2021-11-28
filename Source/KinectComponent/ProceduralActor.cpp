@@ -11,7 +11,7 @@ AProceduralActor::AProceduralActor()
 {
 	//F1 for wireframe in game
 
-	tick = true;
+	tick = false;
 	PrimaryActorTick.bCanEverTick = tick;
 
 	CreateEditorPlaceHolder();
@@ -61,8 +61,7 @@ void AProceduralActor::CreateMesh()
 
 void AProceduralActor::UpdateMesh()
 {
-	int numXY = Width;// (Width * 2) + 1;
-	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(numXY, numXY, false, triangles);
+	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(Width, Length, false, triangles);
 
 	mesh->CreateMeshSection_LinearColor(0, vertices, triangles, normals, uvs, vertexColors, tangents, true);
 	mesh->ContainsPhysicsTriMeshData(true); // Enable collision data
@@ -73,7 +72,7 @@ void AProceduralActor::UpdateMesh()
 void AProceduralActor::BeginPlay()
 {
 	Super::BeginPlay();
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "BeginPlay");
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "BeginPlay");
 
 	PrimaryActorTick.SetTickFunctionEnable(tick);
 
@@ -84,12 +83,12 @@ void AProceduralActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	//currentTime += DeltaTime;
+	currentTime += DeltaTime;
 
-	//if (currentTime >= interval)
+	if (currentTime >= updateInterval)
 	{
 		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Tick"));
-		//currentTime = 0.0f;
+		currentTime = 0.0f;
 
 		int length = vertices.Num();
 
