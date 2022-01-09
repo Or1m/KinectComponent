@@ -1,8 +1,9 @@
 // Copyright 2021, Bc. Miroslav Kaèeriak. All Rights Reserved.
 
+#include "ProceduralActor.h"
 #include <ProceduralMeshComponent/Public/KismetProceduralMeshLibrary.h>
 
-#include "ProceduralActor.h"
+
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 
@@ -11,7 +12,7 @@ AProceduralActor::AProceduralActor()
 {
 	//F1 for wireframe in game
 
-	tick = false;
+	tick = true;
 	PrimaryActorTick.bCanEverTick = tick;
 
 	CreateEditorPlaceHolder();
