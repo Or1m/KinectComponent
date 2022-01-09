@@ -16,7 +16,7 @@ struct HeightMapType
 constexpr unsigned int KINECT_DEPTH_WIDTH = 512;
 constexpr unsigned int KINECT_DEPTH_HEIGHT = 424;
 constexpr unsigned int KINECT_DEPTH_CAPACITY = KINECT_DEPTH_WIDTH * KINECT_DEPTH_HEIGHT;
-constexpr unsigned int FRAME = KINECT_DEPTH_CAPACITY * sizeof(UINT16); // UINT16
+constexpr unsigned int FRAME = KINECT_DEPTH_CAPACITY * sizeof(UINT16);
 
 constexpr unsigned int MAX = 7908;
 HeightMapType* HEIGHTMAP;
@@ -56,8 +56,8 @@ void AProceduralActor::LoadHeightMap()
 {
     int error, i, j, index;
     FILE* filePtr;
-    unsigned long long count, imageSize = KINECT_DEPTH_WIDTH * KINECT_DEPTH_HEIGHT;
-    unsigned short* rawImage;
+    unsigned long long count;
+    UINT16* rawImage;
 
     HEIGHTMAP = new HeightMapType[KINECT_DEPTH_WIDTH * KINECT_DEPTH_HEIGHT];
     if (!HEIGHTMAP)
@@ -75,7 +75,7 @@ void AProceduralActor::LoadHeightMap()
     }
 
     // Allocate memory for the raw image data.
-    rawImage = new unsigned short[imageSize];
+    rawImage = new UINT16[KINECT_DEPTH_CAPACITY];
     if (!rawImage)
     {
         GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("!rawImage"));
@@ -83,8 +83,8 @@ void AProceduralActor::LoadHeightMap()
     }
 
     // Read in the raw image data.
-    count = fread(rawImage, sizeof(unsigned short), imageSize, filePtr);
-    if (count != imageSize)
+    count = fread(rawImage, sizeof(UINT16), KINECT_DEPTH_CAPACITY, filePtr);
+    if (count != KINECT_DEPTH_CAPACITY)
     {
         GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("count != imageSize"));
         return;
