@@ -28,6 +28,7 @@ public:
 		float updateInterval = 1.0f;
 
 protected:
+	void LoadHeightMap();
 	void InitializeInGameMesh();
 	void CreateMesh();
 	void UpdateMesh();

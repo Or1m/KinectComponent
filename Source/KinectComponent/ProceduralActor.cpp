@@ -2,17 +2,33 @@
 
 #include "ProceduralActor.h"
 #include <ProceduralMeshComponent/Public/KismetProceduralMeshLibrary.h>
-
-
+#include <iostream>
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+
+struct HeightMapType
+{
+    float x, y, z;
+    float nx, ny, nz;
+    float r, g, b;
+};
+
+constexpr unsigned int KINECT_DEPTH_WIDTH = 512;
+constexpr unsigned int KINECT_DEPTH_HEIGHT = 424;
+constexpr unsigned int KINECT_DEPTH_CAPACITY = KINECT_DEPTH_WIDTH * KINECT_DEPTH_HEIGHT;
+constexpr unsigned int FRAME = KINECT_DEPTH_CAPACITY * sizeof(short); // uint16_t?
+std::string FILENAME = "kinectDepthData_0.raw";
+HeightMapType* HEIGHTMAP;
+
+FString absoluteFilePath = FPaths::ProjectDir() + TEXT("kinectDepthData_0.raw");
+std::string stringPath = std::string(TCHAR_TO_UTF8(*absoluteFilePath));
 
 // Sets default values
 AProceduralActor::AProceduralActor()
 {
 	//F1 for wireframe in game
 
-	tick = true;
+	tick = false;
 	PrimaryActorTick.bCanEverTick = tick;
 
 	CreateEditorPlaceHolder();
@@ -33,6 +49,75 @@ void AProceduralActor::CreateEditorPlaceHolder()
 	RootComponent = editorMash;
 }
 
+void AProceduralActor::LoadHeightMap()
+{
+    int error, i, j, index;
+    FILE* filePtr;
+    unsigned long long imageSize, count;
+    unsigned short* rawImage;
+
+    // Create the float array to hold the height map data.
+    HEIGHTMAP = new HeightMapType[KINECT_DEPTH_WIDTH * KINECT_DEPTH_HEIGHT];
+    if (!HEIGHTMAP)
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("!HEIGHTMAP"));
+        return;
+    }
+
+    // Open the 16 bit raw height map file for reading in binary.
+    error = fopen_s(&filePtr, stringPath.c_str(), "rb");
+    if (error != 0)
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("ERR in opening " + absoluteFilePath));
+        return;
+    }
+
+    return;
+
+    // Calculate the size of the raw image data.
+    imageSize = KINECT_DEPTH_WIDTH * KINECT_DEPTH_HEIGHT;
+
+    // Allocate memory for the raw image data.
+    rawImage = new unsigned short[imageSize];
+    if (!rawImage)
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("!rawImage"));
+        return;
+    }
+
+    // Read in the raw image data.
+    count = fread(rawImage, sizeof(unsigned short), imageSize, filePtr);
+    if (count != imageSize)
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("count != imageSize"));
+        return;
+    }
+
+    // Close the file.
+    error = fclose(filePtr);
+    if (error != 0)
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("ERR in closing"));
+        return;
+    }
+
+    // Copy the image data into the height map array.
+    for (j = 0; j < KINECT_DEPTH_HEIGHT; j++)
+    {
+        for (i = 0; i < KINECT_DEPTH_WIDTH; i++)
+        {
+            index = (KINECT_DEPTH_WIDTH * j) + i;
+
+            // Store the height at this point in the height map array.
+            HEIGHTMAP[index].y = (float)rawImage[index];
+        }
+    }
+
+    // Release the bitmap image data.
+    delete[] rawImage;
+    rawImage = 0;
+}
+
 void AProceduralActor::InitializeInGameMesh()
 {
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("GeneratedMesh"));
@@ -51,7 +136,18 @@ void AProceduralActor::CreateMesh()
 		{
 			item.X = i * LengthMultiplicator;
 			item.Y = j * LengthMultiplicator;
-			item.Z = static_cast<float>((rand() / static_cast<float>(RAND_MAX)) * HeightMultiplicator);
+			//item.Z = static_cast<float>((rand() / static_cast<float>(RAND_MAX)) * HeightMultiplicator);
+
+            int index = (Width * i) + j;
+
+            try 
+            {
+                item.Z = HEIGHTMAP[index].y;
+            }
+            catch(...)
+            {
+                GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("e"));
+            }
 
 			vertices.Add(item);
 		}
@@ -77,6 +173,7 @@ void AProceduralActor::BeginPlay()
 
 	PrimaryActorTick.SetTickFunctionEnable(tick);
 
+    LoadHeightMap();
 	CreateMesh();
 }
 // Called every frame
