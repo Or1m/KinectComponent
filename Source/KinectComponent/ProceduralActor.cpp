@@ -16,12 +16,15 @@ struct HeightMapType
 constexpr unsigned int KINECT_DEPTH_WIDTH = 512;
 constexpr unsigned int KINECT_DEPTH_HEIGHT = 424;
 constexpr unsigned int KINECT_DEPTH_CAPACITY = KINECT_DEPTH_WIDTH * KINECT_DEPTH_HEIGHT;
-constexpr unsigned int FRAME = KINECT_DEPTH_CAPACITY * sizeof(short); // uint16_t?
-std::string FILENAME = "kinectDepthData_0.raw";
+constexpr unsigned int FRAME = KINECT_DEPTH_CAPACITY * sizeof(UINT16); // UINT16
+
+constexpr unsigned int MAX = 7908;
 HeightMapType* HEIGHTMAP;
 
 FString absoluteFilePath = FPaths::ProjectDir() + TEXT("kinectDepthData_0.raw");
 std::string stringPath = std::string(TCHAR_TO_UTF8(*absoluteFilePath));
+
+inline float Normalize(float val, int max, int min) { return (val - min) / (max - min); }
 
 // Sets default values
 AProceduralActor::AProceduralActor()
@@ -53,10 +56,9 @@ void AProceduralActor::LoadHeightMap()
 {
     int error, i, j, index;
     FILE* filePtr;
-    unsigned long long imageSize, count;
+    unsigned long long count, imageSize = KINECT_DEPTH_WIDTH * KINECT_DEPTH_HEIGHT;
     unsigned short* rawImage;
 
-    // Create the float array to hold the height map data.
     HEIGHTMAP = new HeightMapType[KINECT_DEPTH_WIDTH * KINECT_DEPTH_HEIGHT];
     if (!HEIGHTMAP)
     {
@@ -71,11 +73,6 @@ void AProceduralActor::LoadHeightMap()
         GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("ERR in opening " + absoluteFilePath));
         return;
     }
-
-    return;
-
-    // Calculate the size of the raw image data.
-    imageSize = KINECT_DEPTH_WIDTH * KINECT_DEPTH_HEIGHT;
 
     // Allocate memory for the raw image data.
     rawImage = new unsigned short[imageSize];
@@ -97,7 +94,7 @@ void AProceduralActor::LoadHeightMap()
     error = fclose(filePtr);
     if (error != 0)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("ERR in closing"));
+        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("error during closing"));
         return;
     }
 
@@ -130,35 +127,39 @@ void AProceduralActor::CreateMesh()
 	editorMash->DestroyComponent();
 
 	FVector item;
-	for (int i = 0; i < Width; i++)
-	{
-		for (int j = 0; j < Length; j++)
-		{
-			item.X = i * LengthMultiplicator;
-			item.Y = j * LengthMultiplicator;
-			//item.Z = static_cast<float>((rand() / static_cast<float>(RAND_MAX)) * HeightMultiplicator);
+    for (int j = 0; j < KINECT_DEPTH_HEIGHT; j++)
+    {
+        for (int i = 0; i < KINECT_DEPTH_WIDTH; i++)
+        {
+            int index = (KINECT_DEPTH_WIDTH * j) + i;
 
-            int index = (Width * i) + j;
+            item.X = i * LengthMultiplicator;
+            item.Y = j * LengthMultiplicator;
+            item.Z = Normalize(HEIGHTMAP[index].y, MAX, 0) * HeightMultiplicator; //static_cast<float>((rand() / static_cast<float>(RAND_MAX)) * HeightMultiplicator);
 
-            try 
-            {
-                item.Z = HEIGHTMAP[index].y;
-            }
-            catch(...)
-            {
-                GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("e"));
-            }
+            vertices.Add(item);
+        }
+    }
 
-			vertices.Add(item);
-		}
-	}
+ //   int w = 20, h = 30;
+	//for (int i = 0; i < w; i++)
+	//{
+	//	for (int j = 0; j < h; j++)
+	//	{
+ //           item.X = i * LengthMultiplicator;
+ //           item.Y = j * LengthMultiplicator;
+	//		//item.Z = static_cast<float>((rand() / static_cast<float>(RAND_MAX)) * HeightMultiplicator);
+
+	//		vertices.Add(item);
+	//	}
+	//}
 
 	UpdateMesh();
 }
 
 void AProceduralActor::UpdateMesh()
 {
-	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(Width, Length, false, triangles);
+	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(KINECT_DEPTH_HEIGHT, KINECT_DEPTH_WIDTH, true, triangles);
 
 	mesh->CreateMeshSection_LinearColor(0, vertices, triangles, normals, uvs, vertexColors, tangents, true);
 	mesh->ContainsPhysicsTriMeshData(true); // Enable collision data
