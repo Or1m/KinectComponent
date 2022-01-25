@@ -5,6 +5,13 @@
 #include <iostream>
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include <ctime>
+
+void wait_until_next_second()
+{
+    time_t before = time(0);
+    while (difftime(time(0), before) < 2);
+}
 
 struct HeightMapType
 {
@@ -82,12 +89,32 @@ void AProceduralActor::LoadHeightMap()
         return;
     }
 
-    // Read in the raw image data.
-    count = fread(rawImage, sizeof(UINT16), KINECT_DEPTH_CAPACITY, filePtr);
-    if (count != KINECT_DEPTH_CAPACITY)
+    while (!feof(filePtr)) // to read file
     {
-        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("count != imageSize"));
-        return;
+        // Read in the raw image data.
+        count = fread(rawImage, sizeof(UINT16), KINECT_DEPTH_CAPACITY, filePtr);
+        if (count != KINECT_DEPTH_CAPACITY)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("count != imageSize"));
+            //return;
+            continue;
+        }
+
+        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::FromInt(count));
+        
+        // Copy the image data into the height map array.
+        for (j = 0; j < KINECT_DEPTH_HEIGHT; j++)
+        {
+            for (i = 0; i < KINECT_DEPTH_WIDTH; i++)
+            {
+                index = (KINECT_DEPTH_WIDTH * j) + i;
+
+                // Store the height at this point in the height map array.
+                HEIGHTMAP[index].y = (float)rawImage[index];
+            }
+        }
+
+        wait_until_next_second();
     }
 
     // Close the file.
@@ -96,18 +123,6 @@ void AProceduralActor::LoadHeightMap()
     {
         GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("error during closing"));
         return;
-    }
-
-    // Copy the image data into the height map array.
-    for (j = 0; j < KINECT_DEPTH_HEIGHT; j++)
-    {
-        for (i = 0; i < KINECT_DEPTH_WIDTH; i++)
-        {
-            index = (KINECT_DEPTH_WIDTH * j) + i;
-
-            // Store the height at this point in the height map array.
-            HEIGHTMAP[index].y = (float)rawImage[index];
-        }
     }
 
     // Release the bitmap image data.
