@@ -28,7 +28,8 @@ public:
 		float updateInterval = 1.0f;
 
 protected:
-	void LoadHeightMap();
+	bool LoadHeightMap();
+	bool UnloadHeightMap();
 	void InitializeInGameMesh();
 	void CreateMesh();
 	void UpdateMesh();
@@ -37,6 +38,8 @@ protected:
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	// Called when the game starts or when spawned
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
