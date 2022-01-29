@@ -4,11 +4,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
 
-
+//Press F1 in game for wireframe view
 AProceduralActor::AProceduralActor()
 {
-	//F1 for wireframe in game
-
 	tick = true;
 	PrimaryActorTick.bCanEverTick = tick;
 
