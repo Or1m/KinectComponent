@@ -70,6 +70,8 @@ private:
 		UProceduralMeshComponent* mesh;
 	UPROPERTY()
 		UStaticMeshComponent* editorMesh;
+	UPROPERTY()
+		UMaterial* terrainMaterial;
 
 	UPROPERTY()
 		TArray<FVector> terrainVertices;
@@ -80,9 +82,10 @@ private:
 	UPROPERTY()
 		TArray<FVector2D> uvs;
 	UPROPERTY()
-		TArray<FLinearColor> vertexColors;
+		TArray<FColor> vertexColors;
 	UPROPERTY()
 		TArray<FProcMeshTangent> tangents;
+
 
 	UINT16* rawImage;
 	FILE* filePtr;

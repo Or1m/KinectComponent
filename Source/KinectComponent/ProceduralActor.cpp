@@ -22,10 +22,12 @@ void AProceduralActor::CreateEditorPlaceHolder()
 
 	ConstructorHelpers::FObjectFinder<UStaticMesh> meshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Plane'"));
 	ConstructorHelpers::FObjectFinder<UMaterial> material(TEXT("Material'/Game/Materials/Material'"));
+    ConstructorHelpers::FObjectFinder<UMaterial> water(TEXT("Material'/Game/Materials/M_Lake'"));
 
 	editorMesh->SetStaticMesh(meshAsset.Object);
 	editorMesh->GetStaticMesh()->SetMaterial(0, material.Object);
 	
+    terrainMaterial = water.Object;
 	RootComponent = editorMesh;
 #endif
 }
@@ -154,9 +156,10 @@ void AProceduralActor::CreateTerrainMesh()
             terrainVertices.Add(terrain3DPoint);
         }
     }
-
     UKismetProceduralMeshLibrary::CreateGridMeshTriangles(terrainHeight, terrainWidth, true, triangles);
-    mesh->CreateMeshSection_LinearColor(0, terrainVertices, triangles, normals, uvs, vertexColors, tangents, true);
+    mesh->CreateMeshSection(0, terrainVertices, triangles, normals, uvs, vertexColors, tangents, true);
+
+    mesh->SetMaterial(0, terrainMaterial);
 }
 
 void AProceduralActor::UpdateTerrainMesh() 
@@ -183,7 +186,7 @@ void AProceduralActor::UpdateTerrainMesh()
         }
     }
 
-    mesh->UpdateMeshSection_LinearColor(0, terrainVertices, normals, uvs, vertexColors, tangents);
+    mesh->UpdateMeshSection(0, terrainVertices, normals, uvs, vertexColors, tangents);
 }
 
 
