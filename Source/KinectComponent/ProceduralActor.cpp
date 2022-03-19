@@ -84,7 +84,7 @@ void AProceduralActor::Tick(float DeltaTime)
 
 bool AProceduralActor::LoadHeightMap()
 {
-    const char* filePath = TCHAR_TO_UTF8(*(FPaths::ProjectDir() + fileName));
+    const char* filePath = TCHAR_TO_UTF8(*(FPaths::ProjectDir() + FileName));
 
     // Open the 16 bit raw height map file for reading in binary.
     int error = fopen_s(&filePtr, filePath, "rb");
@@ -113,7 +113,8 @@ bool AProceduralActor::LoadHeightMap()
     return true;
 }
 
-bool AProceduralActor::UnloadHeightMap() {
+bool AProceduralActor::UnloadHeightMap() 
+{
     // Close the file.
     int error = fclose(filePtr);
     if (error != 0)
@@ -138,12 +139,12 @@ void AProceduralActor::CreateMesh()
 	editorMesh->DestroyComponent();
 
     FVector terrain3DPoint;
-    for (int j = 0; j < TerrainHeight; j++)
+    for (int j = 0; j < terrainHeight; j++)
     {
-        for (int i = 0; i < TerrainWidth; i++)
+        for (int i = 0; i < terrainWidth; i++)
         {
-            terrain3DPoint.X = i * LengthMultiplicator;
-            terrain3DPoint.Y = j * LengthMultiplicator;
+            terrain3DPoint.X = i * lengthMultiplicator;
+            terrain3DPoint.Y = j * lengthMultiplicator;
             terrain3DPoint.Z = 0;
 
             terrainVertices.Add(terrain3DPoint);
@@ -155,7 +156,7 @@ void AProceduralActor::CreateMesh()
 
 void AProceduralActor::UpdateMesh()
 {
-	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(TerrainHeight, TerrainWidth, true, triangles);
+	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(terrainHeight, terrainWidth, true, triangles);
 
 	mesh->CreateMeshSection_LinearColor(0, terrainVertices, triangles, normals, uvs, vertexColors, tangents, true);
 	mesh->ContainsPhysicsTriMeshData(true); // Enable collision data
@@ -164,21 +165,24 @@ void AProceduralActor::UpdateMesh()
 void AProceduralActor::UpdateTerrainHeight()
 {
     int k = 0;
-    for (int j = 0; j < TerrainHeight; j++)
+    for (int j = 0; j < terrainHeight; j++)
     {
-        for (int i = 0; i < TerrainWidth; i++)
+        for (int i = 0; i < terrainWidth; i++)
         {
-            float gx = i / float(TerrainWidth) * KINECT_DEPTH_WIDTH;
-            float gy = j / float(TerrainHeight) * KINECT_DEPTH_HEIGHT;
-            int gxi = int(gx);
-            int gyi = int(gy);
+            // Coordinates of the desired point transformed from terrain coordinates to heightmap coordinates
+            float x = i / float(terrainWidth) * KINECT_DEPTH_WIDTH;
+            float y = j / float(terrainHeight) * KINECT_DEPTH_HEIGHT;
+            // Exact pixel coordinates in the heightmap
+            int hx = int(x);
+            int hy = int(y);
 
-            const UINT16& c00 = rawImage[gyi * KINECT_DEPTH_WIDTH + gxi];
-            const UINT16& c10 = rawImage[gyi * KINECT_DEPTH_WIDTH + (gxi + 1)];
-            const UINT16& c01 = rawImage[(gyi + 1) * KINECT_DEPTH_WIDTH + gxi];
-            const UINT16& c11 = rawImage[(gyi + 1) * KINECT_DEPTH_WIDTH + (gxi + 1)];
+            // Height values of 4 nearest points on heightmap to interpolate
+            UINT16 p00 = rawImage[hy * KINECT_DEPTH_WIDTH + hx];
+            UINT16 p10 = rawImage[hy * KINECT_DEPTH_WIDTH + (hx + 1)];
+            UINT16 p01 = rawImage[(hy + 1) * KINECT_DEPTH_WIDTH + hx];
+            UINT16 p11 = rawImage[(hy + 1) * KINECT_DEPTH_WIDTH + (hx + 1)];
 
-            terrainVertices[k++].Z = Normalize(Bilinear(gx - gxi, gy - gyi, c00, c10, c01, c11)) * HeightMultiplicator;
+            terrainVertices[k++].Z = Normalize(Bilinear(x - hx, y - hy, { p00, p10, p01, p11 })) * heightMultiplicator;
         }
     }
 }
@@ -189,16 +193,10 @@ inline float AProceduralActor::Normalize(const float value)
     return (value - MIN) / (MAX - MIN); 
 }
 
-inline float AProceduralActor::Bilinear(const float& tx, const float& ty, const UINT16& c00, const UINT16& c10, const UINT16& c01, const UINT16& c11)
+inline float AProceduralActor::Bilinear(const float tx, const float ty, const InterpolatedPoints& points)
 {
-#if 1
-    float a = c00 * (1.f - tx) + c10 * tx;
-    float b = c01 * (1.f - tx) + c11 * tx;
+    float a = points.p00 * (1.f - tx) + points.p10 * tx;
+    float b = points.p01 * (1.f - tx) + points.p11 * tx;
+
     return a * (1.f - ty) + b * ty;
-#else 
-    return (1 - tx) * (1 - ty) * c00 +
-        tx * (1 - ty) * c10 +
-        (1 - tx) * ty * c01 +
-        tx * ty * c11;
-#endif 
 }

@@ -15,19 +15,7 @@ class KINECTCOMPONENT_API AProceduralActor : public AActor
 public:
 	AProceduralActor();
 
-	UPROPERTY(EditAnywhere, Category = Attributes)
-		int TerrainWidth = 480;
-	UPROPERTY(EditAnywhere, Category = Attributes)
-		int TerrainHeight = 640;
-
-	UPROPERTY(EditAnywhere, Category = Attributes)
-		int HeightMultiplicator = 30;
-	UPROPERTY(EditAnywhere, Category = Attributes)
-		int LengthMultiplicator = 100;
-	UPROPERTY(EditAnywhere, Category = Debug)
-		float updateInterval = 1.0f;
-
-	const FString fileName = "kinectDepthData_0.raw";
+	const FString FileName = "kinectDepthData_0.raw";
 
 	// Kinect constants
 	static constexpr unsigned int MIN = 0;
@@ -38,6 +26,14 @@ public:
 
 	static constexpr unsigned int KINECT_DEPTH_CAPACITY = KINECT_DEPTH_WIDTH * KINECT_DEPTH_HEIGHT;
 	static constexpr unsigned int FRAME = KINECT_DEPTH_CAPACITY * sizeof(UINT16);
+
+	struct InterpolatedPoints
+	{
+		UINT16 p00;
+		UINT16 p10;
+		UINT16 p01;
+		UINT16 p11;
+	};
 
 protected:
 	void CreateEditorPlaceHolder();
@@ -55,9 +51,22 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 	inline float Normalize(const float value);
-	inline float Bilinear(const float& tx, const float& ty, const UINT16& c00, const UINT16& c10, const UINT16& c01, const UINT16& c11);
+	inline float Bilinear(const float tx, const float ty, const InterpolatedPoints& points);
 	
 private:
+	UPROPERTY(EditAnywhere, Category = Attributes)
+		int terrainWidth = 480;
+	UPROPERTY(EditAnywhere, Category = Attributes)
+		int terrainHeight = 640;
+
+	UPROPERTY(EditAnywhere, Category = Attributes)
+		int heightMultiplicator = 30;
+	UPROPERTY(EditAnywhere, Category = Attributes)
+		int lengthMultiplicator = 100;
+
+	UPROPERTY(EditAnywhere, Category = Debug)
+		float updateInterval = 1.0f;
+
 	UPROPERTY()
 		UProceduralMeshComponent* mesh;
 	UPROPERTY()
@@ -81,6 +90,5 @@ private:
 
 	float currentTime = 0.0f;
 	unsigned long long count;
-
 	bool tick;
 };
