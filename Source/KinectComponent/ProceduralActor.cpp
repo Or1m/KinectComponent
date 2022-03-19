@@ -17,6 +17,7 @@ AProceduralActor::AProceduralActor()
 
 void AProceduralActor::CreateEditorPlaceHolder()
 {
+#if WITH_EDITOR
 	editorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Placeholder"));
 
 	ConstructorHelpers::FObjectFinder<UStaticMesh> meshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Plane'"));
@@ -26,6 +27,7 @@ void AProceduralActor::CreateEditorPlaceHolder()
 	editorMesh->GetStaticMesh()->SetMaterial(0, material.Object);
 	
 	RootComponent = editorMesh;
+#endif
 }
 
 void AProceduralActor::InitializeInGameMesh()
@@ -136,7 +138,10 @@ bool AProceduralActor::UnloadHeightMap()
 void AProceduralActor::CreateMesh()
 {
 	RootComponent = mesh;
+
+#if WITH_EDITOR
 	editorMesh->DestroyComponent();
+#endif
 
     FVector terrain3DPoint;
     for (int j = 0; j < terrainHeight; j++)
