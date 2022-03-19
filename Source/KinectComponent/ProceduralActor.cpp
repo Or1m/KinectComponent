@@ -17,15 +17,15 @@ AProceduralActor::AProceduralActor()
 
 void AProceduralActor::CreateEditorPlaceHolder()
 {
-	editorMash = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Placeholder"));
+	editorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Placeholder"));
 
 	ConstructorHelpers::FObjectFinder<UStaticMesh> meshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Plane'"));
 	ConstructorHelpers::FObjectFinder<UMaterial> material(TEXT("Material'/Game/Materials/Material'"));
 
-	editorMash->SetStaticMesh(meshAsset.Object);
-	editorMash->GetStaticMesh()->SetMaterial(0, material.Object);
+	editorMesh->SetStaticMesh(meshAsset.Object);
+	editorMesh->GetStaticMesh()->SetMaterial(0, material.Object);
 	
-	RootComponent = editorMash;
+	RootComponent = editorMesh;
 }
 
 void AProceduralActor::InitializeInGameMesh()
@@ -63,8 +63,7 @@ void AProceduralActor::Tick(float DeltaTime)
     if (currentTime >= updateInterval)
     {
         currentTime = 0.0f;
-
-        int length = vertices.Num();
+        int length = terrainVertices.Num();
 
         if (!feof(filePtr)) 
         {
@@ -73,13 +72,10 @@ void AProceduralActor::Tick(float DeltaTime)
             if (count != KINECT_DEPTH_CAPACITY)
             {
                 GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("tick: count != imageSize"));
+                return;
             }
 
-            for (int i = 0; i < length; i++)
-            {
-                vertices[i].Z = Normalize((float)rawImage[i]) * HeightMultiplicator;
-            }
-
+            UpdateTerrainHeight();
             UpdateMesh();
         }
     }
@@ -139,20 +135,18 @@ bool AProceduralActor::UnloadHeightMap() {
 void AProceduralActor::CreateMesh()
 {
 	RootComponent = mesh;
-	editorMash->DestroyComponent();
+	editorMesh->DestroyComponent();
 
-	FVector item;
-    for (int j = 0; j < KINECT_DEPTH_HEIGHT; j++)
+    FVector terrain3DPoint;
+    for (int j = 0; j < TerrainHeight; j++)
     {
-        for (int i = 0; i < KINECT_DEPTH_WIDTH; i++)
+        for (int i = 0; i < TerrainWidth; i++)
         {
-            int index = (KINECT_DEPTH_WIDTH * j) + i;
+            terrain3DPoint.X = i * LengthMultiplicator;
+            terrain3DPoint.Y = j * LengthMultiplicator;
+            terrain3DPoint.Z = 0;
 
-            item.X = i * LengthMultiplicator;
-            item.Y = j * LengthMultiplicator;
-            item.Z = Normalize((float)rawImage[index]) * HeightMultiplicator; //static_cast<float>((rand() / static_cast<float>(RAND_MAX)) * HeightMultiplicator);
-            
-            vertices.Add(item);
+            terrainVertices.Add(terrain3DPoint);
         }
     }
 
@@ -161,14 +155,50 @@ void AProceduralActor::CreateMesh()
 
 void AProceduralActor::UpdateMesh()
 {
-	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(KINECT_DEPTH_HEIGHT, KINECT_DEPTH_WIDTH, true, triangles);
+	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(TerrainHeight, TerrainWidth, true, triangles);
 
-	mesh->CreateMeshSection_LinearColor(0, vertices, triangles, normals, uvs, vertexColors, tangents, true);
+	mesh->CreateMeshSection_LinearColor(0, terrainVertices, triangles, normals, uvs, vertexColors, tangents, true);
 	mesh->ContainsPhysicsTriMeshData(true); // Enable collision data
+}
+
+void AProceduralActor::UpdateTerrainHeight()
+{
+    int k = 0;
+    for (int j = 0; j < TerrainHeight; j++)
+    {
+        for (int i = 0; i < TerrainWidth; i++)
+        {
+            float gx = i / float(TerrainWidth) * KINECT_DEPTH_WIDTH;
+            float gy = j / float(TerrainHeight) * KINECT_DEPTH_HEIGHT;
+            int gxi = int(gx);
+            int gyi = int(gy);
+
+            const UINT16& c00 = rawImage[gyi * KINECT_DEPTH_WIDTH + gxi];
+            const UINT16& c10 = rawImage[gyi * KINECT_DEPTH_WIDTH + (gxi + 1)];
+            const UINT16& c01 = rawImage[(gyi + 1) * KINECT_DEPTH_WIDTH + gxi];
+            const UINT16& c11 = rawImage[(gyi + 1) * KINECT_DEPTH_WIDTH + (gxi + 1)];
+
+            terrainVertices[k++].Z = Normalize(Bilinear(gx - gxi, gy - gyi, c00, c10, c01, c11)) * HeightMultiplicator;
+        }
+    }
 }
 
 
 inline float AProceduralActor::Normalize(const float value) 
 { 
     return (value - MIN) / (MAX - MIN); 
+}
+
+inline float AProceduralActor::Bilinear(const float& tx, const float& ty, const UINT16& c00, const UINT16& c10, const UINT16& c01, const UINT16& c11)
+{
+#if 1
+    float a = c00 * (1.f - tx) + c10 * tx;
+    float b = c01 * (1.f - tx) + c11 * tx;
+    return a * (1.f - ty) + b * ty;
+#else 
+    return (1 - tx) * (1 - ty) * c00 +
+        tx * (1 - ty) * c10 +
+        (1 - tx) * ty * c01 +
+        tx * ty * c11;
+#endif 
 }

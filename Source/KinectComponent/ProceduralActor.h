@@ -16,9 +16,10 @@ public:
 	AProceduralActor();
 
 	UPROPERTY(EditAnywhere, Category = Attributes)
-		int Width = 640;
+		int TerrainWidth = 480;
 	UPROPERTY(EditAnywhere, Category = Attributes)
-		int Length = 480;
+		int TerrainHeight = 640;
+
 	UPROPERTY(EditAnywhere, Category = Attributes)
 		int HeightMultiplicator = 30;
 	UPROPERTY(EditAnywhere, Category = Attributes)
@@ -47,21 +48,23 @@ protected:
 
 	void CreateMesh();
 	void UpdateMesh();
+	void UpdateTerrainHeight();
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaTime) override;
 
 	inline float Normalize(const float value);
-
+	inline float Bilinear(const float& tx, const float& ty, const UINT16& c00, const UINT16& c10, const UINT16& c01, const UINT16& c11);
+	
 private:
 	UPROPERTY()
 		UProceduralMeshComponent* mesh;
 	UPROPERTY()
-		UStaticMeshComponent* editorMash;
+		UStaticMeshComponent* editorMesh;
 
 	UPROPERTY()
-		TArray<FVector> vertices;
+		TArray<FVector> terrainVertices;
 	UPROPERTY()
 		TArray<FVector> normals;
 	UPROPERTY()
