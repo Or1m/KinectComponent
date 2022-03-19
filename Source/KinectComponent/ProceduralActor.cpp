@@ -46,7 +46,7 @@ void AProceduralActor::BeginPlay()
     if (LoadHeightMap()) 
     {
         GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Loaded");
-        CreateMesh();
+        CreateTerrainMesh();
     }
 }
 
@@ -77,8 +77,7 @@ void AProceduralActor::Tick(float DeltaTime)
                 return;
             }
 
-            UpdateTerrainHeight();
-            UpdateMesh();
+            UpdateTerrainMesh();
         }
     }
 }
@@ -135,7 +134,7 @@ bool AProceduralActor::UnloadHeightMap()
 }
 
 
-void AProceduralActor::CreateMesh()
+void AProceduralActor::CreateTerrainMesh()
 {
 	RootComponent = mesh;
 
@@ -156,18 +155,11 @@ void AProceduralActor::CreateMesh()
         }
     }
 
-	UpdateMesh();
+    UKismetProceduralMeshLibrary::CreateGridMeshTriangles(terrainHeight, terrainWidth, true, triangles);
+    mesh->CreateMeshSection_LinearColor(0, terrainVertices, triangles, normals, uvs, vertexColors, tangents, true);
 }
 
-void AProceduralActor::UpdateMesh()
-{
-	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(terrainHeight, terrainWidth, true, triangles);
-
-	mesh->CreateMeshSection_LinearColor(0, terrainVertices, triangles, normals, uvs, vertexColors, tangents, true);
-	mesh->ContainsPhysicsTriMeshData(true); // Enable collision data
-}
-
-void AProceduralActor::UpdateTerrainHeight()
+void AProceduralActor::UpdateTerrainMesh() 
 {
     int k = 0;
     for (int j = 0; j < terrainHeight; j++)
@@ -190,6 +182,8 @@ void AProceduralActor::UpdateTerrainHeight()
             terrainVertices[k++].Z = Normalize(Bilinear(x - hx, y - hy, { p00, p10, p01, p11 })) * heightMultiplicator;
         }
     }
+
+    mesh->UpdateMeshSection_LinearColor(0, terrainVertices, normals, uvs, vertexColors, tangents);
 }
 
 

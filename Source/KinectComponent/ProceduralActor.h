@@ -42,9 +42,8 @@ protected:
 	bool LoadHeightMap();
 	bool UnloadHeightMap();
 
-	void CreateMesh();
-	void UpdateMesh();
-	void UpdateTerrainHeight();
+	void CreateTerrainMesh();
+	void UpdateTerrainMesh();
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
