@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
-
+using System;
+using System.IO;
 using UnrealBuildTool;
 
 public class KinectComponent : ModuleRules
@@ -12,9 +13,11 @@ public class KinectComponent : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
+		PublicAdditionalLibraries.Add("C:\\Program Files\\Microsoft SDKs\\Kinect\\v2.0_1409\\Lib\\x64\\Kinect20.lib");
+
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-		
+
 		// Uncomment if you are using online features
 		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
 

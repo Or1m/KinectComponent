@@ -1,7 +1,9 @@
 #pragma once
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
+#endif
 
-
-
+#include <Kinect.h>
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "ProceduralMeshComponent.h"
@@ -36,6 +38,8 @@ public:
 	};
 
 protected:
+	void Init();
+	void Shutdown();
 	void CreateEditorPlaceHolder();
 	void InitializeInGameMesh();
 
@@ -86,6 +90,11 @@ private:
 	UPROPERTY()
 		TArray<FProcMeshTangent> tangents;
 
+	//Kinect
+	IDepthFrameReader* m_depthFrameReader = nullptr;
+	IKinectSensor* m_sensor = nullptr;
+	int m_depthWidth = 0, m_depthHeight = 0;
+	//
 
 	UINT16* rawImage;
 	FILE* filePtr;
