@@ -17,8 +17,6 @@ class KINECTCOMPONENT_API AProceduralActor : public AActor
 public:
 	AProceduralActor();
 
-	const FString FileName = "kinectDepthData_0.raw";
-
 	// Kinect constants
 	static constexpr unsigned int MIN = 0;
 	static constexpr unsigned int MAX = 8192; // 2^13
@@ -38,13 +36,11 @@ public:
 	};
 
 protected:
-	void Init();
+	bool Initialize();
 	void Shutdown();
+	
 	void CreateEditorPlaceHolder();
 	void InitializeInGameMesh();
-
-	bool LoadHeightMap();
-	bool UnloadHeightMap();
 
 	void CreateTerrainMesh();
 	void UpdateTerrainMesh();
@@ -55,6 +51,9 @@ protected:
 
 	inline float Normalize(const float value);
 	inline float Bilinear(const float tx, const float ty, const InterpolatedPoints& points);
+
+	template<typename T>
+	void SafeRelease(T& ptr) { if (ptr) { ptr->Release(); ptr = nullptr; } }
 	
 private:
 	UPROPERTY(EditAnywhere, Category = Attributes)
@@ -90,16 +89,12 @@ private:
 	UPROPERTY()
 		TArray<FProcMeshTangent> tangents;
 
-	//Kinect
 	IDepthFrameReader* m_depthFrameReader = nullptr;
 	IKinectSensor* m_sensor = nullptr;
-	int m_depthWidth = 0, m_depthHeight = 0;
-	//
+	int depthWidth = 0, depthHeight = 0;
 
 	UINT16* rawImage;
 	FILE* filePtr;
 
-	float currentTime = 0.0f;
-	unsigned long long count;
 	bool tick;
 };

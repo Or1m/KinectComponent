@@ -4,19 +4,15 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
 
-template<typename T>
-void SafeRelease(T& ptr) { if (ptr) { ptr->Release(); ptr = nullptr; } }
 
-//Press F1 in game for wireframe view
 AProceduralActor::AProceduralActor()
 {
 	tick = true;
 	PrimaryActorTick.bCanEverTick = tick;
 
-	CreateEditorPlaceHolder();
-	InitializeInGameMesh();
+	CreateEditorPlaceHolder(); // Not mandatory
+	InitializeInGameMesh(); 
 }
-
 
 void AProceduralActor::CreateEditorPlaceHolder()
 {
@@ -25,12 +21,12 @@ void AProceduralActor::CreateEditorPlaceHolder()
 
 	ConstructorHelpers::FObjectFinder<UStaticMesh> meshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Plane'"));
 	ConstructorHelpers::FObjectFinder<UMaterial> material(TEXT("Material'/Game/Materials/Material'"));
-    ConstructorHelpers::FObjectFinder<UMaterial> water(TEXT("Material'/Game/Materials/M_Lake'"));
+    ConstructorHelpers::FObjectFinder<UMaterial> heightMat(TEXT("Material'/Game/Materials/testMat'"));
 
 	editorMesh->SetStaticMesh(meshAsset.Object);
 	editorMesh->GetStaticMesh()->SetMaterial(0, material.Object);
 	
-    terrainMaterial = water.Object;
+    terrainMaterial = heightMat.Object;
 	RootComponent = editorMesh;
 #endif
 }
@@ -48,9 +44,9 @@ void AProceduralActor::BeginPlay()
 
     PrimaryActorTick.SetTickFunctionEnable(tick);
 
-    if (LoadHeightMap()) 
+    if (Initialize())
     {
-        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Loaded");
+        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Initialized");
         CreateTerrainMesh();
     }
 }
@@ -58,7 +54,6 @@ void AProceduralActor::BeginPlay()
 void AProceduralActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     Super::EndPlay(EndPlayReason);
-    UnloadHeightMap();
     Shutdown();
 }
 
@@ -66,95 +61,32 @@ void AProceduralActor::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
     
-    currentTime += DeltaTime;
-    
-    
-    //if (currentTime >= updateInterval)
-    {
-        //currentTime = 0.0f;
-        //int length = terrainVertices.Num();
+    HRESULT hr;
+    IDepthFrame* depthFrame;
 
-        /*if (!feof(filePtr)) 
-        {
-            count = fread(rawImage, sizeof(UINT16), KINECT_DEPTH_CAPACITY, filePtr);
-
-            if (count != KINECT_DEPTH_CAPACITY)
-            {
-                GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("tick: count != imageSize"));
-                return;
-            }
-
-            UpdateTerrainMesh();
-        }*/
-
-        HRESULT hr;
-        IDepthFrame* depthFrame;
-
-        hr = m_depthFrameReader->AcquireLatestFrame(&depthFrame);
+    hr = m_depthFrameReader->AcquireLatestFrame(&depthFrame);
         
-        if (FAILED(hr)) {
-            //GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Failed1"));
-            return;
-        }
-            
-
-        hr = depthFrame->CopyFrameDataToArray(m_depthWidth * m_depthHeight, rawImage);
-
-        if (FAILED(hr))
-        {
-            SafeRelease(depthFrame);
-            //GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Failed2"));
-            return;
-        }
-
-        SafeRelease(depthFrame);
-
-        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::SanitizeFloat(currentTime));
-
-        UpdateTerrainMesh();
+    if (FAILED(hr)) {
+        //GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Failed to AcquireLatestFrame"));
+        return;
     }
+            
+    hr = depthFrame->CopyFrameDataToArray(depthWidth * depthHeight, rawImage);
+
+    if (FAILED(hr))
+    {
+        SafeRelease(depthFrame);
+        //GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Failed to CopyFrameDataToArray"));
+        return;
+    }
+
+    SafeRelease(depthFrame);
+    UpdateTerrainMesh();
 }
 
-
-bool AProceduralActor::LoadHeightMap()
+// Put initialization stuff here
+bool AProceduralActor::Initialize()
 {
-    //const char* filePath = TCHAR_TO_UTF8(*(FPaths::ProjectDir() + FileName));
-
-    //// Open the 16 bit raw height map file for reading in binary.
-    //int error = fopen_s(&filePtr, filePath, "rb");
-    //if (error != 0)
-    //{
-    //    GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("ERR in opening file"));
-    //    return false;
-    //}
-
-    // Allocate memory for the raw image data.
-
-    //rawImage = new UINT16[KINECT_DEPTH_CAPACITY];
-    Init();
-
-
-    //if (!rawImage)
-    //{
-    //    GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("!rawImage"));
-    //    return false;
-    //}
-
-    //// Read in the raw image data.
-    //count = fread(rawImage, sizeof(UINT16), KINECT_DEPTH_CAPACITY, filePtr);
-    //if (count != KINECT_DEPTH_CAPACITY)
-    //{
-    //    GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("count != imageSize"));
-    //    return false;
-    //}
-
-    return true;
-}
-
-void AProceduralActor::Init()
-{
-    //put initialization stuff here
-
     HRESULT hr;
 
     //get the kinect sensor
@@ -162,7 +94,7 @@ void AProceduralActor::Init()
     if (FAILED(hr))
     {
         GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Failed to find the kinect sensor!"));
-        return;
+        return false;
     }
 
     m_sensor->Open();
@@ -173,85 +105,38 @@ void AProceduralActor::Init()
     if (FAILED(hr))
     {
         GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Failed to get the depth frame source."));
-        return;
+        return false;
     }
 
     //get depth frame description
     IFrameDescription* frameDesc;
     depthFrameSource->get_FrameDescription(&frameDesc);
-    frameDesc->get_Width(&m_depthWidth);
-    frameDesc->get_Height(&m_depthHeight);
+    frameDesc->get_Width(&depthWidth);
+    frameDesc->get_Height(&depthHeight);
 
     //get the depth frame reader
     hr = depthFrameSource->OpenReader(&m_depthFrameReader);
     if (FAILED(hr))
     {
         GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Failed to open the depth frame reader!\n"));
-        return;
+        return false;
     }
     //release depth frame source
     SafeRelease(depthFrameSource);
 
     //allocate depth buffer
-    rawImage = new uint16[m_depthWidth * m_depthHeight];
+    rawImage = new uint16[depthWidth * depthHeight];
 
-    //get color frame source
-    /*IColorFrameSource* colorFrameSource;
-    hr = m_sensor->get_ColorFrameSource(&colorFrameSource);
-    if (FAILED(hr))
-    {
-        printf("Failed to get color frame source!\n");
-        exit(10);
-    }*/
-
-    //get color frame reader
-    //hr = colorFrameSource->OpenReader(&m_colorFrameReader);
-    //if (FAILED(hr))
-    //{
-    //    printf("Failed to open color frame reader!\n");
-    //    exit(10);
-    //}
-
-    ////release the color frame source
-    //SafeRelease(colorFrameSource);
-
-    //allocate color buffer
-    //m_colorBuffer = new uint32[1920 * 1080];
-
-    ////get the coordinate mapper
-    //hr = m_sensor->get_CoordinateMapper(&m_coordinateMapper);
-    //if (FAILED(hr))
-    //{
-    //    printf("Failed to get coordinate mapper!\n");
-    //    exit(10);
-    //}
-
-    ////allocate a buffer of color space points
-    //m_colorSpacePoints = new ColorSpacePoint[m_depthWidth * m_depthHeight];
+    return true;
 }
-
-bool AProceduralActor::UnloadHeightMap() 
+// Put cleaning up stuff here
+void AProceduralActor::Shutdown()
 {
-    // Close the file.
-    /*int error = fclose(filePtr);
-    if (error != 0)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("error during closing"));
-        return false;
-    }*/
-
     // Release the bitmap image data.
     delete[] rawImage;
 
     rawImage = nullptr;
     filePtr = nullptr;
-
-    return true;
-}
-
-void AProceduralActor::Shutdown()
-{
-    //put cleaning up stuff here
 
     /*delete[] m_colorBuffer;
     SafeRelease(m_colorFrameReader);*/
@@ -281,10 +166,12 @@ void AProceduralActor::CreateTerrainMesh()
             terrainVertices.Add(terrain3DPoint);
         }
     }
+
+    //Press F1 in game for wireframe view
     UKismetProceduralMeshLibrary::CreateGridMeshTriangles(terrainHeight, terrainWidth, true, triangles);
     mesh->CreateMeshSection(0, terrainVertices, triangles, normals, uvs, vertexColors, tangents, true);
 
-    //mesh->SetMaterial(0, terrainMaterial);
+    mesh->SetMaterial(0, terrainMaterial);
 }
 
 void AProceduralActor::UpdateTerrainMesh() 
